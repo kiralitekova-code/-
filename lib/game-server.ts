@@ -230,3 +230,40 @@ export class GameServer {
 }
 
 export const gameServer = new GameServer();
+
+export function calculateBattleOutcome(
+  attackingUnits: any[],
+  defendingUnits: any[]
+): {
+  destroyedAttacking: string[];
+  destroyedDefending: string[];
+  victorious: 'attacker' | 'defender' | 'draw';
+} {
+  // Calculate total combat power
+  const attackPower = attackingUnits.reduce((sum, u) => {
+    const basePower = UNIT_STATS[u.unit_type as keyof typeof UNIT_STATS]?.attack || 10;
+    return sum + basePower * u.health * (u.level || 1);
+  }, 0);
+
+  const defendPower = defendingUnits.reduce((sum, u) => {
+    const basePower = UNIT_STATS[u.unit_type as keyof typeof UNIT_STATS]?.defense || 10;
+    return sum + basePower * u.health * (u.level || 1);
+  }, 0);
+
+  // Determine casualty distribution
+  const totalCasualtyRate = Math.min(0.8, (Math.abs(attackPower - defendPower) / Math.max(attackPower, defendPower)) * 0.5);
+  
+  const destroyedAttacking = attackingUnits
+    .slice(0, Math.max(1, Math.floor(attackingUnits.length * totalCasualtyRate)))
+    .map((u) => u.id);
+
+  const destroyedDefending = defendingUnits
+    .slice(0, Math.max(1, Math.floor(defendingUnits.length * totalCasualtyRate * 1.2)))
+    .map((u) => u.id);
+
+  let victorious: 'attacker' | 'defender' | 'draw' = 'draw';
+  if (attackPower > defendPower * 1.2) victorious = 'attacker';
+  else if (defendPower > attackPower * 1.2) victorious = 'defender';
+
+  return { destroyedAttacking, destroyedDefending, victorious };
+}

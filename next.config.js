@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   experimental: {
-    reactCompiler: true,
+    reactCompiler: false,
   },
   webpack: (config, { isServer }) => {
     config.externals.push('colyseus/lib/serializer/encoding/encode.ts');
