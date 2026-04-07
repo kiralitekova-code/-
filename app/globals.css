@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --military-dark: #0a1428;
+  --military-light: #1a2a3a;
+  --tactical-green: #4ade80;
+  --tactical-red: #ef4444;
+  --tactical-blue: #3b82f6;
+  --tactical-yellow: #facc15;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--military-dark);
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+#__next {
+  width: 100%;
+  height: 100%;
+}
+
+/* Grid cell styling */
+.grid-cell {
+  @apply border border-tactical-blue/20 hover:border-tactical-blue/60 transition-all cursor-pointer;
+}
+
+.grid-cell.has-base {
+  @apply bg-military-light/50 border-tactical-green/60;
+}
+
+.grid-cell.selected {
+  @apply bg-tactical-blue/30 border-tactical-blue;
+}
+
+.grid-cell.hostile {
+  @apply border-tactical-red/60 hover:bg-tactical-red/10;
+}
+
+/* Unit counter styling */
+.unit-badge {
+  @apply inline-flex items-center justify-center w-6 h-6 bg-tactical-blue rounded-full text-xs font-bold text-white;
+}
+
+/* Button styling */
+.btn-tactical {
+  @apply px-4 py-2 bg-tactical-blue text-white rounded border border-tactical-blue hover:bg-tactical-blue/80 transition-colors;
+}
+
+.btn-tactical.danger {
+  @apply bg-tactical-red border-tactical-red hover:bg-tactical-red/80;
+}
+
+.btn-tactical.success {
+  @apply bg-tactical-green border-tactical-green text-black hover:bg-tactical-green/80;
+}
+
+.btn-tactical.disabled {
+  @apply opacity-50 cursor-not-allowed hover:bg-tactical-blue;
+}
+
+/* Resource display */
+.resource-display {
+  @apply flex items-center gap-2 px-3 py-2 bg-military-light/70 rounded border border-tactical-blue/30;
+}
+
+.resource-icon {
+  @apply w-5 h-5;
+}
+
+/* Status bar */
+.health-bar {
+  @apply w-full h-2 bg-military-light rounded overflow-hidden;
+}
+
+.health-bar-fill {
+  @apply h-full bg-tactical-green transition-all;
+}
+
+.health-bar-fill.damaged {
+  @apply bg-tactical-yellow;
+}
+
+.health-bar-fill.critical {
+  @apply bg-tactical-red;
+}
+
+/* Panel styling */
+.panel {
+  @apply bg-military-light/80 border border-tactical-blue/30 rounded p-4;
+}
+
+.panel-header {
+  @apply text-lg font-bold text-tactical-green mb-4;
+}
+
+.panel-item {
+  @apply flex justify-between items-center py-2 border-b border-tactical-blue/10 last:border-b-0;
+}
+
+.panel-label {
+  @apply text-tactical-blue font-semibold;
+}
+
+.panel-value {
+  @apply text-tactical-yellow font-mono;
+}
