@@ -3,59 +3,67 @@ import { getDB } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, playerId, allianceId, targetPlayerId, allianceName } = await req.json();
+    const { action, playerId, allianceId, allianceName } = await req.json();
 
     const sql = getDB();
 
+    // Validate playerId is a valid UUID format
+    if (!playerId || typeof playerId !== 'string') {
+      return NextResponse.json({ error: 'Invalid playerId' }, { status: 400 });
+    }
+
     if (action === 'create') {
-      if (!allianceName || !playerId) {
-        return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+      if (!allianceName) {
+        return NextResponse.json({ error: 'Missing alliance name' }, { status: 400 });
       }
 
       const result = await sql`
-        INSERT INTO alliances (name, leader_id, created_at) 
-        VALUES (${allianceName}, ${playerId}, NOW()) 
+        INSERT INTO alliances (name, leader_player_id, created_at, updated_at) 
+        VALUES (${allianceName}, ${playerId}::uuid, NOW(), NOW()) 
         RETURNING *
       `;
 
       // Add leader as member
       await sql`
-        INSERT INTO alliance_members (alliance_id, player_id, role, joined_at) 
-        VALUES (${result[0].id}, ${playerId}, 'leader', NOW())
+        INSERT INTO alliance_members (alliance_id, player_id, joined_at) 
+        VALUES (${result[0].id}, ${playerId}::uuid, NOW())
       `;
 
       return NextResponse.json({ success: true, alliance: result[0] });
-    } else if (action === 'invite') {
-      if (!allianceId || !targetPlayerId) {
-        return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    } else if (action === 'join') {
+      if (!allianceId) {
+        return NextResponse.json({ error: 'Missing allianceId' }, { status: 400 });
       }
 
-      const result = await sql`
-        INSERT INTO alliance_invites (alliance_id, player_id, status, created_at) 
-        VALUES (${allianceId}, ${targetPlayerId}, 'pending', NOW()) 
-        RETURNING *
+      // Check if already a member
+      const existing = await sql`
+        SELECT id FROM alliance_members 
+        WHERE alliance_id = ${allianceId}::uuid AND player_id = ${playerId}::uuid
       `;
 
-      return NextResponse.json({ success: true, invite: result[0] });
-    } else if (action === 'accept') {
-      if (!allianceId || !playerId) {
-        return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+      if (existing.length > 0) {
+        return NextResponse.json({ error: 'Already a member' }, { status: 400 });
       }
 
-      // Update invite status
-      await sql`
-        UPDATE alliance_invites SET status = 'accepted' 
-        WHERE alliance_id = ${allianceId} AND player_id = ${playerId}
-      `;
-
-      // Add member
+      // Add member directly (no invite system in current schema)
       const result = await sql`
-        INSERT INTO alliance_members (alliance_id, player_id, role, joined_at) 
-        VALUES (${allianceId}, ${playerId}, 'member', NOW()) 
+        INSERT INTO alliance_members (alliance_id, player_id, joined_at) 
+        VALUES (${allianceId}::uuid, ${playerId}::uuid, NOW()) 
         RETURNING *
       `;
 
       return NextResponse.json({ success: true, member: result[0] });
+    } else if (action === 'leave') {
+      if (!allianceId) {
+        return NextResponse.json({ error: 'Missing allianceId' }, { status: 400 });
+      }
+
+      await sql`
+        DELETE FROM alliance_members 
+        WHERE alliance_id = ${allianceId}::uuid AND player_id = ${playerId}::uuid
+      `;
+
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -70,29 +78,47 @@ export async function GET(req: NextRequest) {
     const playerId = req.nextUrl.searchParams.get('playerId');
     const action = req.nextUrl.searchParams.get('action');
 
-    if (!playerId) {
-      return NextResponse.json({ error: 'Missing playerId' }, { status: 400 });
-    }
-
     const sql = getDB();
 
-    if (action === 'my-alliances') {
+    if (action === 'my-alliances' && playerId) {
+      // Validate UUID format before query
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(playerId)) {
+        return NextResponse.json({ alliances: [] });
+      }
+
       const result = await sql`
         SELECT a.* FROM alliances a
         JOIN alliance_members am ON a.id = am.alliance_id
-        WHERE am.player_id = ${playerId}
+        WHERE am.player_id = ${playerId}::uuid
       `;
 
       return NextResponse.json({ alliances: result });
-    } else if (action === 'invites') {
+    } else if (action === 'members' && playerId) {
+      const allianceId = req.nextUrl.searchParams.get('allianceId');
+      if (!allianceId) {
+        return NextResponse.json({ error: 'Missing allianceId' }, { status: 400 });
+      }
+
       const result = await sql`
-        SELECT * FROM alliance_invites WHERE player_id = ${playerId} AND status = 'pending'
+        SELECT am.*, p.level, u.username 
+        FROM alliance_members am
+        JOIN players p ON am.player_id = p.id
+        JOIN users u ON p.user_id = u.id
+        WHERE am.alliance_id = ${allianceId}::uuid
       `;
 
-      return NextResponse.json({ invites: result });
+      return NextResponse.json({ members: result });
     }
 
-    const result = await sql`SELECT * FROM alliances LIMIT 20`;
+    // List all alliances
+    const result = await sql`
+      SELECT a.*, 
+        (SELECT COUNT(*) FROM alliance_members WHERE alliance_id = a.id) as member_count
+      FROM alliances a 
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `;
     return NextResponse.json({ alliances: result });
   } catch (error) {
     console.error('Alliances fetch error:', error);
