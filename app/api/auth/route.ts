@@ -6,63 +6,90 @@ export async function POST(req: NextRequest) {
   try {
     const { action, username, email } = await req.json();
 
-    if (!action || !username || !email) {
+    if (!action || !username) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
     const sql = getDB();
 
     if (action === 'register') {
-      // Check if user already exists
+      if (!email) {
+        return NextResponse.json({ error: 'Email required for registration' }, { status: 400 });
+      }
+
+      // Check if user already exists in users table
       const existing = await sql`
-        SELECT id FROM players WHERE username = ${username} OR email = ${email}
+        SELECT id FROM users WHERE username = ${username} OR email = ${email}
       `;
 
       if (existing.length > 0) {
         return NextResponse.json({ error: 'User already exists' }, { status: 409 });
       }
 
-      // Create new player
+      // Create new user
+      const userId = crypto.randomUUID();
+      const passwordHash = crypto.randomUUID(); // Simplified - in production use bcrypt
+
+      await sql`
+        INSERT INTO users (id, username, email, password_hash) 
+        VALUES (${userId}, ${username}, ${email}, ${passwordHash})
+      `;
+
+      // Create new player linked to user
       const playerId = crypto.randomUUID();
-      const result = await sql`
-        INSERT INTO players (id, username, email, level, experience, total_kills, total_losses) 
-        VALUES (${playerId}, ${username}, ${email}, 1, 0, 0, 0) 
-        RETURNING *
+      await sql`
+        INSERT INTO players (id, user_id, level, experience, total_kills, total_losses) 
+        VALUES (${playerId}, ${userId}, 1, 0, 0, 0)
       `;
 
       // Initialize resources
       await sql`
-        INSERT INTO resources (player_id, money, steel, oil, electronics, manpower) 
-        VALUES (${playerId}, 5000, 1000, 500, 200, 100)
+        INSERT INTO resources (id, player_id, money, steel, oil, electronics, manpower) 
+        VALUES (${crypto.randomUUID()}, ${playerId}, 5000, 1000, 500, 200, 100)
       `;
 
       // Create first base
       await sql`
-        INSERT INTO bases (player_id, name, x_coord, y_coord, health, level) 
-        VALUES (${playerId}, 'Capital', 0, 0, 1000, 1)
+        INSERT INTO bases (id, player_id, name, x_coord, y_coord, health, level) 
+        VALUES (${crypto.randomUUID()}, ${playerId}, 'Capital', 0, 0, 1000, 1)
       `;
 
       return NextResponse.json({
         success: true,
         player: {
-          id: result[0].id,
-          username: result[0].username,
-          level: result[0].level,
+          id: playerId,
+          username: username,
+          level: 1,
         },
       });
     } else if (action === 'login') {
-      // Simple login - just check if user exists
-      const result = await sql`
-        SELECT id, username, level FROM players WHERE username = ${username} OR email = ${username}
+      // Find user by username or email
+      const userResult = await sql`
+        SELECT id, username FROM users WHERE username = ${username} OR email = ${username}
       `;
 
-      if (result.length === 0) {
+      if (userResult.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      const user = userResult[0];
+
+      // Get player data linked to this user
+      const playerResult = await sql`
+        SELECT id, level, experience FROM players WHERE user_id = ${user.id}
+      `;
+
+      if (playerResult.length === 0) {
+        return NextResponse.json({ error: 'Player data not found' }, { status: 404 });
       }
 
       return NextResponse.json({
         success: true,
-        player: result[0],
+        player: {
+          id: playerResult[0].id,
+          username: user.username,
+          level: playerResult[0].level,
+        },
       });
     }
 
@@ -83,8 +110,13 @@ export async function GET(req: NextRequest) {
 
     const sql = getDB();
 
-    // Get player info
-    const playerResult = await sql`SELECT * FROM players WHERE id = ${playerId}`;
+    // Get player info with user join
+    const playerResult = await sql`
+      SELECT p.*, u.username 
+      FROM players p 
+      JOIN users u ON p.user_id = u.id 
+      WHERE p.id = ${playerId}
+    `;
 
     if (playerResult.length === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
