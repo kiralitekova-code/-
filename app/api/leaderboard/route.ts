@@ -8,13 +8,14 @@ export async function GET() {
     const result = await sql`
       SELECT 
         p.id,
-        p.username,
+        u.username,
         p.level,
         p.total_kills,
         COUNT(b.id) as base_count
       FROM players p
+      JOIN users u ON p.user_id = u.id
       LEFT JOIN bases b ON p.id = b.player_id
-      GROUP BY p.id, p.username, p.level, p.total_kills
+      GROUP BY p.id, u.username, p.level, p.total_kills
       ORDER BY p.total_kills DESC, p.level DESC
       LIMIT 100
     `;
