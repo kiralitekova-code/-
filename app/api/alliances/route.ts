@@ -5,55 +5,57 @@ export async function POST(req: NextRequest) {
   try {
     const { action, playerId, allianceId, targetPlayerId, allianceName } = await req.json();
 
-    const db = getDB();
+    const sql = getDB();
 
     if (action === 'create') {
       if (!allianceName || !playerId) {
         return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
       }
 
-      const result = await db.query(
-        'INSERT INTO alliances (name, leader_id, created_at) VALUES ($1, $2, NOW()) RETURNING *',
-        [allianceName, playerId]
-      );
+      const result = await sql`
+        INSERT INTO alliances (name, leader_id, created_at) 
+        VALUES (${allianceName}, ${playerId}, NOW()) 
+        RETURNING *
+      `;
 
       // Add leader as member
-      await db.query(
-        'INSERT INTO alliance_members (alliance_id, player_id, role, joined_at) VALUES ($1, $2, $3, NOW())',
-        [result.rows[0].id, playerId, 'leader']
-      );
+      await sql`
+        INSERT INTO alliance_members (alliance_id, player_id, role, joined_at) 
+        VALUES (${result[0].id}, ${playerId}, 'leader', NOW())
+      `;
 
-      return NextResponse.json({ success: true, alliance: result.rows[0] });
+      return NextResponse.json({ success: true, alliance: result[0] });
     } else if (action === 'invite') {
       if (!allianceId || !targetPlayerId) {
         return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
       }
 
-      const result = await db.query(
-        'INSERT INTO alliance_invites (alliance_id, player_id, status, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
-        [allianceId, targetPlayerId, 'pending']
-      );
+      const result = await sql`
+        INSERT INTO alliance_invites (alliance_id, player_id, status, created_at) 
+        VALUES (${allianceId}, ${targetPlayerId}, 'pending', NOW()) 
+        RETURNING *
+      `;
 
-      return NextResponse.json({ success: true, invite: result.rows[0] });
+      return NextResponse.json({ success: true, invite: result[0] });
     } else if (action === 'accept') {
       if (!allianceId || !playerId) {
         return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
       }
 
       // Update invite status
-      await db.query('UPDATE alliance_invites SET status = $1 WHERE alliance_id = $2 AND player_id = $3', [
-        'accepted',
-        allianceId,
-        playerId,
-      ]);
+      await sql`
+        UPDATE alliance_invites SET status = 'accepted' 
+        WHERE alliance_id = ${allianceId} AND player_id = ${playerId}
+      `;
 
       // Add member
-      const result = await db.query(
-        'INSERT INTO alliance_members (alliance_id, player_id, role, joined_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
-        [allianceId, playerId, 'member']
-      );
+      const result = await sql`
+        INSERT INTO alliance_members (alliance_id, player_id, role, joined_at) 
+        VALUES (${allianceId}, ${playerId}, 'member', NOW()) 
+        RETURNING *
+      `;
 
-      return NextResponse.json({ success: true, member: result.rows[0] });
+      return NextResponse.json({ success: true, member: result[0] });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -72,28 +74,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId' }, { status: 400 });
     }
 
-    const db = getDB();
+    const sql = getDB();
 
     if (action === 'my-alliances') {
-      const result = await db.query(
-        `SELECT a.* FROM alliances a
-         JOIN alliance_members am ON a.id = am.alliance_id
-         WHERE am.player_id = $1`,
-        [playerId]
-      );
+      const result = await sql`
+        SELECT a.* FROM alliances a
+        JOIN alliance_members am ON a.id = am.alliance_id
+        WHERE am.player_id = ${playerId}
+      `;
 
-      return NextResponse.json({ alliances: result.rows });
+      return NextResponse.json({ alliances: result });
     } else if (action === 'invites') {
-      const result = await db.query('SELECT * FROM alliance_invites WHERE player_id = $1 AND status = $2', [
-        playerId,
-        'pending',
-      ]);
+      const result = await sql`
+        SELECT * FROM alliance_invites WHERE player_id = ${playerId} AND status = 'pending'
+      `;
 
-      return NextResponse.json({ invites: result.rows });
+      return NextResponse.json({ invites: result });
     }
 
-    const result = await db.query('SELECT * FROM alliances LIMIT 20');
-    return NextResponse.json({ alliances: result.rows });
+    const result = await sql`SELECT * FROM alliances LIMIT 20`;
+    return NextResponse.json({ alliances: result });
   } catch (error) {
     console.error('Alliances fetch error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

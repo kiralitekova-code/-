@@ -10,55 +10,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const db = getDB();
+    const sql = getDB();
 
     // Verify both bases exist
     const [fromBase, toBase] = await Promise.all([
-      db.query('SELECT * FROM bases WHERE id = $1', [fromBaseId]),
-      db.query('SELECT * FROM bases WHERE id = $1', [toBaseId]),
+      sql`SELECT * FROM bases WHERE id = ${fromBaseId}`,
+      sql`SELECT * FROM bases WHERE id = ${toBaseId}`,
     ]);
 
-    if (fromBase.rows.length === 0 || toBase.rows.length === 0) {
+    if (fromBase.length === 0 || toBase.length === 0) {
       return NextResponse.json({ error: 'Base not found' }, { status: 404 });
     }
 
     // Verify units belong to fromBase
-    const unitsResult = await db.query(
-      'SELECT * FROM units WHERE id = ANY($1) AND base_id = $2',
-      [unitIds, fromBaseId]
-    );
+    const attackingUnits = await sql`
+      SELECT * FROM units WHERE id = ANY(${unitIds}) AND base_id = ${fromBaseId}
+    `;
 
-    if (unitsResult.rows.length !== unitIds.length) {
+    if (attackingUnits.length !== unitIds.length) {
       return NextResponse.json({ error: 'Not all units belong to from_base' }, { status: 400 });
     }
 
-    const attackingUnits = unitsResult.rows;
-
     // Get defending units
-    const defendingResult = await db.query('SELECT * FROM units WHERE base_id = $1', [toBaseId]);
-    const defendingUnits = defendingResult.rows;
+    const defendingUnits = await sql`SELECT * FROM units WHERE base_id = ${toBaseId}`;
 
     // Calculate battle outcome
     const outcome = calculateBattleOutcome(attackingUnits, defendingUnits);
 
     // Create battle record
-    const battleResult = await db.query(
-      'INSERT INTO battles (attacker_base_id, defender_base_id, attacker_units, defender_units, outcome, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
-      [fromBaseId, toBaseId, unitIds.length, defendingUnits.length, JSON.stringify(outcome)]
-    );
+    const battleResult = await sql`
+      INSERT INTO battles (attacker_base_id, defender_base_id, attacker_units, defender_units, outcome, created_at) 
+      VALUES (${fromBaseId}, ${toBaseId}, ${unitIds.length}, ${defendingUnits.length}, ${JSON.stringify(outcome)}, NOW()) 
+      RETURNING *
+    `;
 
     // Remove destroyed units
     if (outcome.destroyedAttacking.length > 0) {
-      await db.query('DELETE FROM units WHERE id = ANY($1)', [outcome.destroyedAttacking]);
+      await sql`DELETE FROM units WHERE id = ANY(${outcome.destroyedAttacking})`;
     }
 
     if (outcome.destroyedDefending.length > 0) {
-      await db.query('DELETE FROM units WHERE id = ANY($1)', [outcome.destroyedDefending]);
+      await sql`DELETE FROM units WHERE id = ANY(${outcome.destroyedDefending})`;
     }
 
     return NextResponse.json({
       success: true,
-      battle: battleResult.rows[0],
+      battle: battleResult[0],
       outcome,
     });
   } catch (error) {
@@ -75,13 +72,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing baseId' }, { status: 400 });
     }
 
-    const db = getDB();
-    const result = await db.query(
-      'SELECT * FROM battles WHERE attacker_base_id = $1 OR defender_base_id = $1 ORDER BY created_at DESC LIMIT 50',
-      [baseId]
-    );
+    const sql = getDB();
+    const result = await sql`
+      SELECT * FROM battles 
+      WHERE attacker_base_id = ${baseId} OR defender_base_id = ${baseId} 
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `;
 
-    return NextResponse.json({ battles: result.rows });
+    return NextResponse.json({ battles: result });
   } catch (error) {
     console.error('Battles fetch error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

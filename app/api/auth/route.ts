@@ -10,60 +10,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const db = getDB();
+    const sql = getDB();
 
     if (action === 'register') {
       // Check if user already exists
-      const existingResult = await db.query(
-        'SELECT id FROM players WHERE username = $1 OR email = $2',
-        [username, email]
-      );
+      const existing = await sql`
+        SELECT id FROM players WHERE username = ${username} OR email = ${email}
+      `;
 
-      if (existingResult.rows.length > 0) {
+      if (existing.length > 0) {
         return NextResponse.json({ error: 'User already exists' }, { status: 409 });
       }
 
       // Create new player
       const playerId = crypto.randomUUID();
-      const result = await db.query(
-        'INSERT INTO players (id, username, email, level, experience, total_kills, total_losses) VALUES ($1, $2, $3, 1, 0, 0, 0) RETURNING *',
-        [playerId, username, email]
-      );
+      const result = await sql`
+        INSERT INTO players (id, username, email, level, experience, total_kills, total_losses) 
+        VALUES (${playerId}, ${username}, ${email}, 1, 0, 0, 0) 
+        RETURNING *
+      `;
 
       // Initialize resources
-      await db.query(
-        'INSERT INTO resources (player_id, money, steel, oil, electronics, manpower) VALUES ($1, 5000, 1000, 500, 200, 100)',
-        [playerId]
-      );
+      await sql`
+        INSERT INTO resources (player_id, money, steel, oil, electronics, manpower) 
+        VALUES (${playerId}, 5000, 1000, 500, 200, 100)
+      `;
 
       // Create first base
-      await db.query(
-        'INSERT INTO bases (player_id, name, x_coord, y_coord, health, level) VALUES ($1, $2, $3, $4, 1000, 1)',
-        [playerId, 'Capital', 0, 0]
-      );
+      await sql`
+        INSERT INTO bases (player_id, name, x_coord, y_coord, health, level) 
+        VALUES (${playerId}, 'Capital', 0, 0, 1000, 1)
+      `;
 
       return NextResponse.json({
         success: true,
         player: {
-          id: result.rows[0].id,
-          username: result.rows[0].username,
-          level: result.rows[0].level,
+          id: result[0].id,
+          username: result[0].username,
+          level: result[0].level,
         },
       });
     } else if (action === 'login') {
       // Simple login - just check if user exists
-      const result = await db.query(
-        'SELECT id, username, level FROM players WHERE username = $1 OR email = $1',
-        [username]
-      );
+      const result = await sql`
+        SELECT id, username, level FROM players WHERE username = ${username} OR email = ${username}
+      `;
 
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
       return NextResponse.json({
         success: true,
-        player: result.rows[0],
+        player: result[0],
       });
     }
 
@@ -82,27 +81,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId' }, { status: 400 });
     }
 
-    const db = getDB();
+    const sql = getDB();
 
     // Get player info
-    const playerResult = await db.query('SELECT * FROM players WHERE id = $1', [playerId]);
+    const playerResult = await sql`SELECT * FROM players WHERE id = ${playerId}`;
 
-    if (playerResult.rows.length === 0) {
+    if (playerResult.length === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    const player = playerResult.rows[0];
+    const player = playerResult[0];
 
     // Get resources
-    const resourcesResult = await db.query('SELECT * FROM resources WHERE player_id = $1', [
-      playerId,
-    ]);
+    const resourcesResult = await sql`SELECT * FROM resources WHERE player_id = ${playerId}`;
 
     // Get bases
-    const basesResult = await db.query('SELECT * FROM bases WHERE player_id = $1', [playerId]);
+    const basesResult = await sql`SELECT * FROM bases WHERE player_id = ${playerId}`;
 
     // Get units
-    const unitsResult = await db.query('SELECT * FROM units WHERE player_id = $1', [playerId]);
+    const unitsResult = await sql`SELECT * FROM units WHERE player_id = ${playerId}`;
 
     return NextResponse.json({
       id: player.id,
@@ -111,14 +108,14 @@ export async function GET(req: NextRequest) {
       experience: player.experience,
       totalKills: player.total_kills,
       totalLosses: player.total_losses,
-      resources: resourcesResult.rows[0] || {
+      resources: resourcesResult[0] || {
         money: 5000,
         steel: 1000,
         oil: 500,
         electronics: 200,
         manpower: 100,
       },
-      bases: basesResult.rows.map((b: any) => ({
+      bases: basesResult.map((b: any) => ({
         id: b.id,
         playerId: b.player_id,
         name: b.name,
@@ -128,7 +125,7 @@ export async function GET(req: NextRequest) {
         maxHealth: 1000,
         level: b.level,
       })),
-      units: unitsResult.rows.map((u: any) => ({
+      units: unitsResult.map((u: any) => ({
         id: u.id,
         playerId: u.player_id,
         baseId: u.base_id,

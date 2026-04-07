@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getDB } from '@/lib/db';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const db = getDB();
+    const sql = getDB();
 
-    const result = await db.query(
-      `SELECT 
+    const result = await sql`
+      SELECT 
         p.id,
         p.username,
         p.level,
@@ -16,12 +16,11 @@ export async function GET(req: NextRequest) {
       LEFT JOIN bases b ON p.id = b.player_id
       GROUP BY p.id, p.username, p.level, p.total_kills
       ORDER BY p.total_kills DESC, p.level DESC
-      LIMIT 100`,
-      []
-    );
+      LIMIT 100
+    `;
 
     return NextResponse.json({
-      leaderboard: result.rows.map((row: any) => ({
+      leaderboard: result.map((row: any) => ({
         id: row.id,
         username: row.username,
         level: row.level,
