@@ -40,7 +40,8 @@ export default function GamePage() {
 
         const response = await fetch(`/api/player?playerId=${playerId}`);
         if (!response.ok) {
-          if (response.status === 401 || response.status === 404) {
+          if (response.status === 400 || response.status === 401 || response.status === 404) {
+            // Invalid or expired session, clear localStorage and redirect to login
             localStorage.removeItem('playerId');
             window.location.href = '/';
             return;
