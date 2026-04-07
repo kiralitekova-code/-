@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDB } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   try {
-    const db = getDb();
+    const db = getDB();
 
     const result = await db.query(
       `SELECT 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDB } from '@/lib/db';
 
 const RESEARCH_COSTS = {
   armor: { money: 5000, steel: 2000, electronics: 1000 },
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
 
     // Get player resources
     const resourcesResult = await db.query(
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
     const result = await db.query(
       'SELECT * FROM research WHERE player_id = $1 ORDER BY completed_at DESC',
       [playerId]

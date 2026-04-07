@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDB } from '@/lib/db';
 import { calculateBattleOutcome } from '@/lib/game-server';
 
 export async function POST(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
 
     // Verify both bases exist
     const [fromBase, toBase] = await Promise.all([
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing baseId' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
     const result = await db.query(
       'SELECT * FROM battles WHERE attacker_base_id = $1 OR defender_base_id = $1 ORDER BY created_at DESC LIMIT 50',
       [baseId]

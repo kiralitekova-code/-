@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDB } from '@/lib/db';
 import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
 
     if (action === 'register') {
       // Check if user already exists
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
 
     // Get player info
     const playerResult = await db.query('SELECT * FROM players WHERE id = $1', [playerId]);

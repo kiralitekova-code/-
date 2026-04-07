@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDB } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
     const { action, playerId, allianceId, targetPlayerId, allianceName } = await req.json();
 
-    const db = getDb();
+    const db = getDB();
 
     if (action === 'create') {
       if (!allianceName || !playerId) {
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = getDB();
 
     if (action === 'my-alliances') {
       const result = await db.query(
