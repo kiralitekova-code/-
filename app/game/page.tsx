@@ -29,9 +29,19 @@ export default function GamePage() {
     const loadPlayer = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/player');
+        
+        // Get player ID from localStorage (set during login/register)
+        const playerId = localStorage.getItem('playerId');
+        if (!playerId) {
+          // Not logged in, redirect to home
+          window.location.href = '/';
+          return;
+        }
+
+        const response = await fetch(`/api/player?playerId=${playerId}`);
         if (!response.ok) {
-          if (response.status === 401) {
+          if (response.status === 401 || response.status === 404) {
+            localStorage.removeItem('playerId');
             window.location.href = '/';
             return;
           }
@@ -63,10 +73,12 @@ export default function GamePage() {
       if (!player) return;
 
       try {
+        const playerId = localStorage.getItem('playerId');
         const response = await fetch('/api/bases', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            playerId,
             name: `Base ${player.bases.length + 1}`,
             x,
             y,
@@ -76,7 +88,8 @@ export default function GamePage() {
         if (!response.ok) throw new Error('Failed to create base');
 
         // Refresh player data
-        const playerResponse = await fetch('/api/player');
+        const playerId = localStorage.getItem('playerId');
+        const playerResponse = await fetch(`/api/player?playerId=${playerId}`);
         const updatedPlayer = await playerResponse.json();
         setPlayer(updatedPlayer);
       } catch (err) {
@@ -91,10 +104,12 @@ export default function GamePage() {
       if (!selectedBase) return;
 
       try {
+        const playerId = localStorage.getItem('playerId');
         const response = await fetch('/api/units', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            playerId,
             baseId: selectedBase.id,
             unitType,
             quantity: 1,
@@ -104,7 +119,8 @@ export default function GamePage() {
         if (!response.ok) throw new Error('Failed to build unit');
 
         // Refresh player data
-        const playerResponse = await fetch('/api/player');
+        const pId = localStorage.getItem('playerId');
+        const playerResponse = await fetch(`/api/player?playerId=${pId}`);
         const updatedPlayer = await playerResponse.json();
         setPlayer(updatedPlayer);
       } catch (err) {
@@ -119,10 +135,12 @@ export default function GamePage() {
       if (!selectedBase) return;
 
       try {
+        const pId = localStorage.getItem('playerId');
         const response = await fetch('/api/units', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            playerId: pId,
             baseId: selectedBase.id,
             unitType,
             quantity,
@@ -132,7 +150,7 @@ export default function GamePage() {
         if (!response.ok) throw new Error('Failed to train units');
 
         // Refresh player data
-        const playerResponse = await fetch('/api/player');
+        const playerResponse = await fetch(`/api/player?playerId=${pId}`);
         const updatedPlayer = await playerResponse.json();
         setPlayer(updatedPlayer);
       } catch (err) {
@@ -147,12 +165,13 @@ export default function GamePage() {
       if (!selectedBase || !player) return;
 
       try {
+        const pId = localStorage.getItem('playerId');
         const response = await fetch('/api/research', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             baseId: selectedBase.id,
-            playerId: player.id,
+            playerId: pId,
             researchType,
           }),
         });
@@ -160,7 +179,7 @@ export default function GamePage() {
         if (!response.ok) throw new Error('Failed to conduct research');
 
         // Refresh player data
-        const playerResponse = await fetch('/api/player');
+        const playerResponse = await fetch(`/api/player?playerId=${pId}`);
         const updatedPlayer = await playerResponse.json();
         setPlayer(updatedPlayer);
       } catch (err) {

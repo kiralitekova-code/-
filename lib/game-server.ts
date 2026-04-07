@@ -2,18 +2,31 @@ import { Player, Base, Unit, Resources, Battle } from './types/game';
 import { GAME_CONFIG, UNIT_STATS } from './constants';
 import { getDB } from './db';
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(str: string): boolean {
+  return UUID_REGEX.test(str);
+}
+
 export class GameServer {
   private players: Map<string, Player> = new Map();
   private battles: Battle[] = [];
 
   async loadPlayerState(playerId: string): Promise<Player | null> {
+    // Validate UUID format
+    if (!isValidUUID(playerId)) {
+      console.error('[v0] Invalid player ID format:', playerId);
+      return null;
+    }
+
     const db = getDB();
 
     try {
       const playerResult = await db`
         SELECT p.id, p.user_id, p.level, p.experience, p.total_kills, p.total_losses
         FROM players p
-        WHERE p.id = ${playerId}
+        WHERE p.id = ${playerId}::uuid
       `;
 
       if (playerResult.length === 0) return null;
@@ -24,7 +37,7 @@ export class GameServer {
       const resourcesResult = await db`
         SELECT money, steel, oil, electronics, manpower
         FROM resources
-        WHERE player_id = ${playerId}
+        WHERE player_id = ${playerId}::uuid
       `;
 
       const resources = resourcesResult[0] || GAME_CONFIG.STARTING_RESOURCES;
@@ -33,14 +46,14 @@ export class GameServer {
       const basesResult = await db`
         SELECT id, player_id, name, x_coord, y_coord, health, level
         FROM bases
-        WHERE player_id = ${playerId}
+        WHERE player_id = ${playerId}::uuid
       `;
 
       // Load units
       const unitsResult = await db`
         SELECT id, player_id, base_id, unit_type, quantity, health, level
         FROM units
-        WHERE player_id = ${playerId}
+        WHERE player_id = ${playerId}::uuid
       `;
 
       const gamePlayer: Player = {
