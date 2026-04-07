@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDB } from '@/lib/db';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 export async function POST(req: NextRequest) {
   try {
