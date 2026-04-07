@@ -12,6 +12,7 @@ module.exports = {
         'tactical-green': '#4ade80',
         'tactical-red': '#ef4444',
         'tactical-blue': '#3b82f6',
+        'tactical-yellow': '#facc15',
       },
       fontFamily: {
         sans: ['system-ui', 'sans-serif'],
