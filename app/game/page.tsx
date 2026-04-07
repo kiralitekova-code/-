@@ -88,7 +88,6 @@ export default function GamePage() {
         if (!response.ok) throw new Error('Failed to create base');
 
         // Refresh player data
-        const playerId = localStorage.getItem('playerId');
         const playerResponse = await fetch(`/api/player?playerId=${playerId}`);
         const updatedPlayer = await playerResponse.json();
         setPlayer(updatedPlayer);
