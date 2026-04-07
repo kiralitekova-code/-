@@ -10,7 +10,7 @@ interface GameGridProps {
   selectedCell?: { x: number; y: number };
 }
 
-export function GameGrid({ bases, onCellClick, selectedCell }: GameGridProps) {
+export default function GameGrid({ bases, onCellClick, selectedCell }: GameGridProps) {
   const baseMap = new Map(bases.map((b) => [`${b.x},${b.y}`, b]));
 
   const cellSize = Math.max(30, Math.min(60, window.innerWidth / (GAME_CONFIG.GRID_SIZE + 2)));
@@ -18,7 +18,7 @@ export function GameGrid({ bases, onCellClick, selectedCell }: GameGridProps) {
   return (
     <div className="flex-1 overflow-auto p-4">
       <div
-        className="inline-grid gap-0 border border-tactical-blue/40 bg-military-dark/50 p-2"
+        className="inline-grid gap-0 border border-blue-500/40 bg-slate-900/50 p-2"
         style={{
           gridTemplateColumns: `repeat(${GAME_CONFIG.GRID_SIZE}, ${cellSize}px)`,
           gridAutoRows: `${cellSize}px`,
@@ -37,13 +37,13 @@ export function GameGrid({ bases, onCellClick, selectedCell }: GameGridProps) {
               className={`
                 grid-cell 
                 flex items-center justify-center text-xs font-bold
-                ${base ? 'has-base bg-tactical-green/20' : ''}
-                ${isSelected ? 'selected bg-tactical-blue/40' : ''}
+                ${base ? 'has-base bg-green-500/20' : ''}
+                ${isSelected ? 'selected bg-blue-500/40' : ''}
                 hover:shadow-lg transition-all
               `}
               title={base ? `${base.name} (Lvl ${base.level})` : `(${x}, ${y})`}
             >
-              {base && <span className="text-tactical-green drop-shadow">●</span>}
+              {base && <span className="text-green-400 drop-shadow">●</span>}
             </div>
           );
         })}

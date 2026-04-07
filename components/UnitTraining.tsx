@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { UNIT_TYPES, UNIT_COSTS } from '@/lib/constants';
+import { UNIT_STATS } from '@/lib/constants';
 import type { UnitType } from '@/lib/types/game';
+
+const UNIT_TYPES = Object.keys(UNIT_STATS) as UnitType[];
 
 interface UnitTrainingProps {
   baseId: string;
@@ -23,16 +25,17 @@ export default function UnitTraining({
   onTrain,
   isLoading,
 }: UnitTrainingProps) {
-  const [selectedUnit, setSelectedUnit] = useState<UnitType>('infantry');
+  const [selectedUnit, setSelectedUnit] = useState<UnitType>('Infantry');
   const [quantity, setQuantity] = useState(1);
 
-  const cost = UNIT_COSTS[selectedUnit];
+  const unitStats = UNIT_STATS[selectedUnit as keyof typeof UNIT_STATS];
+  const cost = unitStats?.cost || { money: 0 };
   const totalCost = {
-    money: cost.money * quantity,
-    steel: cost.steel * quantity,
-    oil: cost.oil * quantity,
-    electronics: cost.electronics * quantity,
-    manpower: cost.manpower * quantity,
+    money: (cost.money || 0) * quantity,
+    steel: ((cost as any).steel || 0) * quantity,
+    oil: ((cost as any).oil || 0) * quantity,
+    electronics: ((cost as any).electronics || 0) * quantity,
+    manpower: ((cost as any).manpower || 0) * quantity,
   };
 
   const canAfford =

@@ -15,7 +15,7 @@ const RESOURCE_ICONS: Record<string, string> = {
   manpower: '👥',
 };
 
-export function ResourcePanel({ resources }: ResourcePanelProps) {
+export default function ResourcePanel({ resources }: ResourcePanelProps) {
   return (
     <div className="panel w-full">
       <div className="panel-header">Resources</div>
