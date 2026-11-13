@@ -1,0 +1,16 @@
+html, body {
+  margin: 0; padding: 0;
+  background: #1a1410;
+  height: 100%;
+  overflow: hidden;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+#wrap {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#game {
+  background: #000;
+  image-rendering: pixelated;
+  touch-action: none;
+}
