@@ -10,7 +10,7 @@ export function newState() {
   Object.assign(res, { grain: 15, wood: 25, herbs: 3, wool: 4, leather: 2 });
   return {
     screen: 'menu',
-    day: 1, money: 250,
+    day: 1, money: 350,
     res,
     fields: Array.from({ length: 6 }, () => ({ crop: null, progress: 0 })),
     pens: { chickens: 0, sheep: 0, cows: 0, horses: 0 },
@@ -28,7 +28,7 @@ export function newState() {
     log: [], tutorialStep: 0,
     pendingEvent: null,
     gameOver: false, ending: null,
-    chopToday: 0,
+    chopToday: 0, oddToday: 0,
   };
 }
 
@@ -161,9 +161,9 @@ function autoSell(s) {
 
 function eat(s) {
   const need = s.workers.total;
-  if (foodTotal(s) >= need) takeFood(s, need);
+  if (foodTotal(s) >= need) { takeFood(s, need); s.morale = Math.min(100, s.morale + 1); }
   else { takeFood(s, foodTotal(s)); s.stats.hungerDays++; s.morale = Math.max(0, s.morale - 3); pushLog(s, 'Голод! Рабочим не хватает еды.'); }
-  if (s.money >= s.workers.total * 2) s.money -= s.workers.total * 2;
+  if (s.money >= s.workers.total) s.money -= s.workers.total;
   else { s.money = 0; s.morale = Math.max(0, s.morale - 2); }
 }
 
@@ -248,6 +248,7 @@ export function totalSquads(s) { return s.squads.militia + s.squads.archers + s.
 export function nextDay(s) {
   if (s.gameOver || s.pendingEvent) return;
   s.chopToday = 0;
+  s.oddToday = 0;
   s.day++;
   if (dayOfSeason(s) === 1 && s.day > 1) {
     const names = ['Весна', 'Лето', 'Осень', 'Зима'];
@@ -278,6 +279,15 @@ export function nextDay(s) {
     s.ending = computeEnding(s);
   }
   save(s);
+}
+
+export function oddJobs(s) {
+  if (workersIdle(s) <= 0 || (s.oddToday || 0) >= 1) return false;
+  s.oddToday = (s.oddToday || 0) + 1;
+  s.money += 25;
+  pushLog(s, 'Подработка в деревне: +25 монет.');
+  save(s);
+  return true;
 }
 
 export function chopWood(s) {

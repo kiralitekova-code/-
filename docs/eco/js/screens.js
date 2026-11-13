@@ -98,6 +98,7 @@ function drawHelp(ctx, g) {
     'приоритеты автопродажи, журнал событий.',
     '',
     'Зимой поля не растут — запасайтесь осенью!',
+    'Денег нет? Подработка в деревне (+25) и продажа древесины спасут.',
     'Пробел — следующий день, Esc — закрыть окно.',
   ];
   ctx.save();
@@ -171,12 +172,14 @@ function drawFarm(ctx, g) {
     hb(g, x, y, 140, 110, () => g.clickField(i), f.crop ? CROPS[f.crop].name : 'Посев');
   }
 
-  U.panel(ctx, 40, 400, 230, 120, 0.85);
+  U.panel(ctx, 40, 400, 230, 150, 0.85);
   const tree = img('tGrassPlants');
   for (let t = 0; t < 4; t++) U.drawSpriteFit(ctx, img(t % 2 ? 'tGrass2' : 'tGrassPlants'), 50 + t * 40, 410, 36, 36);
   U.text(ctx, 'Лес', 155, 420, { font: '18px' });
-  btn(ctx, g, 55, 455, 200, 40, 'Рубить лес (+' + Math.round(6 * S.seasonWoodMult(season) * S.toolBonus(s)) + ' древ.)',
-    () => { if (!S.chopWood(g.state)) g.toast('Нет свободных рабочих или лимит рубки (2/день)'); }, { enabled: S.workersIdle(s) > 0 && s.chopToday < 2 });
+  btn(ctx, g, 55, 448, 200, 38, 'Рубить лес (+' + Math.round(6 * S.seasonWoodMult(season) * S.toolBonus(s)) + ' древ.)',
+    () => { if (!S.chopWood(g.state)) g.toast('Нет свободных рабочих или лимит рубки (2/день)'); }, { enabled: S.workersIdle(s) > 0 && s.chopToday < 2, font: '14px' });
+  btn(ctx, g, 55, 492, 200, 38, 'Подработка (+25💰, 1/день)',
+    () => { if (!S.oddJobs(g.state)) g.toast('Нет свободных рабочих (1/день)'); }, { enabled: S.workersIdle(s) > 0 && !(s.oddToday > 0), font: '14px' });
 
   drawWorkersPanel(ctx, g, 290, 400, 250, 120);
 
