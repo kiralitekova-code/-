@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Деревенский Рай: Наследие</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+<!-- Главное меню -->
+<div id="main-menu" class="overlay visible">
+  <div class="menu-card">
+    <h1>🌾 Деревенский Рай</h1>
+    <h2>Наследие</h2>
+    <p class="menu-sub">Ферма-симулятор с сюжетом</p>
+    <button id="btn-new-game" class="btn btn-primary">▶ Новая игра</button>
+    <button id="btn-continue" class="btn btn-secondary" disabled>📂 Продолжить</button>
+    <div class="menu-help">
+      <b>Управление:</b> WASD / джойстик — движение, <b>E</b> — действие, <b>Q</b> — семена, <b>I</b> — инвентарь<br>
+      Засыпай в доме, чтобы перейти к новому дню 🛏️
+    </div>
+    <div id="menu-banner" class="banner-ad">📢 Реклама (banner) — место для рекламного блока в меню</div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="hud-top-left">
+    <div class="hud-row">💰 <span id="hud-money">0</span></div>
+    <div class="hud-row">⚡ <span id="hud-energy">100</span></div>
+    <div class="hud-row">🎒 <span id="hud-inv-count">0</span></div>
+  </div>
+  <div id="hud-top-right">
+    <div id="hud-season">🌸 Весна · Глава 1</div>
+    <div id="hud-day">День 1 · 08:00</div>
+    <div id="hud-clockbar"><div id="hud-clockfill"></div></div>
+  </div>
+  <div id="hud-quest">
+    <div class="quest-title">📜 <span id="quest-title">Квест</span></div>
+    <div id="quest-desc"></div>
+    <div id="quest-progress"></div>
+  </div>
+  <div id="hud-bottom-right">
+    <button id="btn-inv" class="hud-btn">🎒</button>
+    <button id="btn-shop-hint" class="hud-btn">🏪</button>
+    <button id="btn-seed" class="hud-btn">🌱<span id="seed-label"></span></button>
+  </div>
+  <div id="interact-hint" class="hidden"></div>
+  <div id="toast-container"></div>
+</div>
+
+<!-- Мобильное управление -->
+<div id="mobile-controls" class="hidden">
+  <div id="joystick-zone"><div id="joystick-base"><div id="joystick-stick"></div></div></div>
+  <div id="action-buttons">
+    <button id="mbtn-action" class="mbtn mbtn-a">E</button>
+    <button id="mbtn-seed" class="mbtn mbtn-b">🌱</button>
+    <button id="mbtn-inv" class="mbtn mbtn-c">🎒</button>
+  </div>
+</div>
+
+<!-- Диалог -->
+<div id="dialog" class="overlay hidden">
+  <div id="dialog-box">
+    <div id="dialog-name">НПС</div>
+    <div id="dialog-text"></div>
+    <div id="dialog-choices"></div>
+    <button id="dialog-next" class="btn btn-primary">Далее ▶</button>
+  </div>
+</div>
+
+<!-- Инвентарь -->
+<div id="inventory" class="overlay hidden">
+  <div class="panel">
+    <h3>🎒 Инвентарь</h3>
+    <div id="inv-grid"></div>
+    <div class="panel-row"><span id="inv-seed-select-label">Семена для посадки:</span><select id="seed-select"></select></div>
+    <button class="btn btn-secondary" data-close="inventory">Закрыть</button>
+  </div>
+</div>
+
+<!-- Магазин -->
+<div id="shop" class="overlay hidden">
+  <div class="panel">
+    <h3>🏪 Магазин Ашота</h3>
+    <div id="shop-tabs">
+      <button class="btn btn-small tab-active" data-tab="seeds">Семена</button>
+      <button class="btn btn-small" data-tab="animals">Животные</button>
+      <button class="btn btn-small" data-tab="sell">Продать</button>
+    </div>
+    <div id="shop-items"></div>
+    <button class="btn btn-secondary" data-close="shop">Закрыть</button>
+  </div>
+</div>
+
+<!-- Реклама (симуляция rewarded) -->
+<div id="ad-overlay" class="overlay hidden">
+  <div class="ad-card">
+    <div class="ad-label">Реклама · <span id="ad-timer">5</span> сек</div>
+    <div class="ad-body">🎬<br><b>«АгроХолдинг Громова»</b><br>Коттеджный посёлок «Берёзовка Люкс»<br><span class="ad-small">(имитация рекламного ролика — SDK подключается здесь)</span></div>
+    <button id="ad-reward-btn" class="btn btn-primary" disabled>Забрать награду</button>
+  </div>
+</div>
+
+<!-- Межстраничная реклама -->
+<div id="interstitial" class="overlay hidden">
+  <div class="ad-card">
+    <div class="ad-label">Реклама</div>
+    <div class="ad-body">📢<br><b>Магазин семян «Ашот & Ко»</b><br>Скидки на тыквенные семечки!<br><span class="ad-small">(имитация interstitial)</span></div>
+    <button id="interstitial-close" class="btn btn-secondary" disabled>Пропустить (<span id="inter-timer">3</span>)</button>
+  </div>
+</div>
+
+<!-- Концовка -->
+<div id="ending" class="overlay hidden">
+  <div class="menu-card">
+    <h1 id="ending-title">Финал</h1>
+    <p id="ending-text"></p>
+    <button id="btn-ending-restart" class="btn btn-primary">Играть снова</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
