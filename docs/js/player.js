@@ -1,33 +1,5 @@
 import * as THREE from 'three';
 
-export function createHumanoid(shirtColor, skinColor = 0xf0c8a0, pantsColor = 0x3a5a8f) {
-  const g = new THREE.Group();
-  const mat = c => new THREE.MeshLambertMaterial({ color: c });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.4), mat(shirtColor));
-  body.position.y = 1.05; body.castShadow = true;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mat(skinColor));
-  head.position.y = 1.8; head.castShadow = true;
-  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.6, 0.28), mat(pantsColor));
-  legL.position.set(-0.18, 0.3, 0); legL.castShadow = true;
-  const legR = legL.clone(); legR.position.x = 0.18;
-  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.7, 0.22), mat(shirtColor));
-  armL.position.set(-0.5, 1.1, 0); armL.castShadow = true;
-  const armR = armL.clone(); armR.position.x = 0.5;
-  const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 10), mat(0xd9a441));
-  hat.position.y = 2.1;
-  const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.22, 10), mat(0xd9a441));
-  hatTop.position.y = 2.22;
-  g.add(body, head, legL, legR, armL, armR, hat, hatTop);
-  g.userData.limbs = { legL, legR, armL, armR };
-  return g;
-}
-
-export function createPlayer() {
-  const mesh = createHumanoid(0x4a8f3c);
-  mesh.position.set(-6, 0, 2);
-  return mesh;
-}
-
 export class PlayerController {
   constructor(player, camera) {
     this.player = player;

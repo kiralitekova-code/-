@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createScene, createRenderer, applySeason, applyTimeOfDay } from './world.js';
-import { createPlayer, createHumanoid, PlayerController } from './player.js';
+import { PlayerController } from './player.js';
+import { createHumanoid } from './models.js';
 import { createNPCs, createAnimals, updateAnimals } from './npc.js';
 import { UI } from './ui.js';
 import {
@@ -25,7 +26,8 @@ export class Game {
     this.scene3d = createScene();
     this.scene = this.scene3d.scene;
 
-    this.player = createPlayer();
+    this.player = createHumanoid(0x4a8f3c, 0xf0c8a0, 0x3a5a8f, { hat: 'straw', hair: '#5a3a1a' });
+    this.player.position.set(-6, 0, 2);
     this.scene.add(this.player);
     this.controller = new PlayerController(this.player, this.camera);
     this.controller.onAction = () => this.tryInteract();
@@ -666,6 +668,7 @@ export class Game {
         this.ui.toast('🌙 Поздняя ночь... Пора спать в доме!');
       }
       applyTimeOfDay(this.scene3d, this.state.timeOfDay);
+      this.scene3d.update(dt, this.state.timeOfDay);
       this.controller.update(dt, this.isUIOpen());
       updateAnimals(this.animalList, dt);
       this.updatePlotVisuals();
