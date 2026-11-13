@@ -83,11 +83,12 @@ export class Game {
   setupMenu() {
     const menu = document.getElementById('main-menu');
     menu.classList.add('visible');
-    document.getElementById('btn-new-game').onclick = () => { menu.classList.remove('visible'); this.startGame(false); };
+    const closeMenu = () => { menu.classList.remove('visible'); menu.classList.add('hidden'); };
+    document.getElementById('btn-new-game').onclick = () => { closeMenu(); this.startGame(false); };
     const cont = document.getElementById('btn-continue');
     if (hasSave()) {
       cont.disabled = false;
-      cont.onclick = () => { menu.classList.remove('visible'); this.startGame(true); };
+      cont.onclick = () => { closeMenu(); this.startGame(true); };
     }
   }
 
