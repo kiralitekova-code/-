@@ -1,4 +1,5 @@
-import { SEASONS, seasonOf, dayOfSeason, itemIcon, itemName, isSeedItem, SEED_ITEM_PREFIX, CROPS, ANIMALS, ORE } from './data.js';
+import { SEASONS, CROPS, ANIMALS, ORE } from './data.js';
+import { seasonOf, dayOfSeason, itemIcon, itemName, isSeedItem, SEED_ITEM_PREFIX } from './state.js';
 
 const $ = id => document.getElementById(id);
 

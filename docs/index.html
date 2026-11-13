@@ -126,6 +126,18 @@
   </div>
 </div>
 
+<script>
+window.addEventListener('error', function (e) {
+  var el = document.getElementById('js-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'js-error';
+    el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#b0413e;color:#fff;font:12px monospace;padding:8px 12px;white-space:pre-wrap;';
+    document.body.appendChild(el);
+  }
+  el.textContent = '⚠ Ошибка: ' + (e.message || e.type) + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '');
+});
+</script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
