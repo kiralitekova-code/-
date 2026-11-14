@@ -70,6 +70,12 @@ export const SQUADS = {
   knights: { name: 'Рыцари',    icon: 'chKnight', cost: 700, need: { leatherT: 5, iron: 5, cloth: 5 }, power: 3 },
 };
 
+export const RUINS = {
+  mill:   { name: 'Старая мельница', icon: 'bMill',  days: 3, arch: 1, squads: 0, reward: { money: 200, clay: 10 }, seal: 0, desc: 'Спокойный маршрут по окрестностям' },
+  barrow: { name: 'Древний курган',  icon: 'bRuin',  days: 5, arch: 1, squads: 1, reward: { money: 450, gems: 2 }, seal: 0, desc: 'Старое захоронение — нужен отряд охраны' },
+  deep:   { name: 'Штольни Первого Народа', icon: 'bTower', days: 8, arch: 2, squads: 2, reward: { money: 900, gems: 4 }, seal: 1, desc: 'Опасные руины: Печать Древних (+5% к производству навсегда)' },
+};
+
 export const ORDER_POOL = [
   { res: 'wool',     qty: 20,  reward: 180, days: 6 },
   { res: 'cloth',    qty: 10,  reward: 220, days: 7 },

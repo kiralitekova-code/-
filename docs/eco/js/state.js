@@ -1,4 +1,4 @@
-import { RES, CROPS, PENS, WORKSHOPS, SQUADS, ORDER_POOL, EVENTS, TUTORIAL, DAYS_IN_SEASON, foodTotal, indTotal, takeFood } from './data.js';
+import { RES, CROPS, PENS, WORKSHOPS, SQUADS, RUINS, ORDER_POOL, EVENTS, TUTORIAL, DAYS_IN_SEASON, foodTotal, indTotal, takeFood } from './data.js';
 
 const SAVE_KEY = 'ray-eco-save-v1';
 const YEAR_DAYS = DAYS_IN_SEASON * 4;
@@ -29,6 +29,7 @@ export function newState() {
     pendingEvent: null,
     gameOver: false, ending: null,
     chopToday: 0, oddToday: 0,
+    arch: 0, expedition: null, seals: 0, ruinsDone: {},
   };
 }
 
@@ -70,6 +71,8 @@ export function workersIdle(s) {
 export function toolBonus(s) {
   return 1 + Math.min(3, Math.floor((s.res.tools || 0) / 5)) * 0.15;
 }
+
+export function sealBonus(s) { return 1 + 0.05 * (s.seals || 0); }
 
 export function seasonGrowMult(season) { return [1, 1.15, 1.3, 0][season]; }
 export function seasonWoodMult(season) { return [0.8, 1, 1.3, 0.4][season]; }
@@ -123,10 +126,37 @@ function runWorkshops(s) {
   return prod;
 }
 
+function advanceExpedition(s) {
+  if (!s.expedition) return;
+  s.expedition.daysLeft--;
+  if (s.expedition.daysLeft > 0) return;
+  const e = s.expedition;
+  const r = RUINS[e.ruin];
+  s.expedition = null;
+  s.arch += e.arch;
+  if (e.success) {
+    const rep = s.ruinsDone[e.ruin] || 0;
+    const k = Math.max(0.5, 1 - 0.15 * rep);
+    for (const id in r.reward) {
+      if (id === 'money') s.money += Math.round(r.reward[id] * k);
+      else addRes(s, id, Math.max(1, Math.round(r.reward[id] * k)));
+    }
+    if (r.seal && rep === 0) {
+      s.seals += r.seal;
+      pushLog(s, 'Найдена Печать Древних! Производство +5% за каждую печать.');
+    }
+    s.ruinsDone[e.ruin] = rep + 1;
+    s.morale = Math.min(100, s.morale + 3);
+    pushLog(s, 'Экспедиция вернулась из «' + r.name + '» с добычей!');
+  } else {
+    pushLog(s, 'Экспедиция в «' + r.name + '» провалилась — археологи вернулись ни с чем.');
+  }
+}
+
 function mineProduce(s) {
   const n = s.workers.assign.mine;
   if (n <= 0) return;
-  const tb = toolBonus(s);
+  const tb = toolBonus(s) * sealBonus(s);
   let ore = 1.2 * n * tb;
   let coal = s.mineDepth >= 2 ? 0.8 * n * tb : 0;
   addRes(s, 'ore', Math.round(ore));
@@ -270,6 +300,7 @@ export function nextDay(s) {
   autoSell(s);
   eat(s);
   advanceCaravan(s);
+  advanceExpedition(s);
   checkOrders(s);
   ensureOrders(s);
   maybeEvent(s);
@@ -308,7 +339,7 @@ export function harvestField(s, i) {
   const c = CROPS[f.crop];
   const boost = 1 + 0.1 * s.workers.assign.fields;
   const mult = seasonOf(s) === 2 ? 1.3 : 1;
-  const n = Math.round(c.yield * boost * mult * toolBonus(s));
+  const n = Math.round(c.yield * boost * mult * toolBonus(s) * sealBonus(s));
   addRes(s, c.res, n);
   addRes(s, 'straw', 2);
   s.stats.produced += n;
@@ -424,6 +455,28 @@ export function buyResource(s, id, n) {
 export function buyPrice(s, id, n) { return Math.round(n * RES[id].price * seasonPriceMult(s) * 1.5); }
 export function sellPrice(s, id, n) { return Math.round(n * RES[id].price * seasonPriceMult(s) * 0.8); }
 
+export function hireArch(s) {
+  if (s.money < 250 || s.arch >= 4) return false;
+  s.money -= 250;
+  s.arch++;
+  pushLog(s, 'Нанят археолог (' + s.arch + '/4).');
+  save(s);
+  return true;
+}
+
+export function sendExpedition(s, id) {
+  const r = RUINS[id];
+  if (s.expedition) return false;
+  if (s.arch < r.arch) return false;
+  if (totalSquads(s) < r.squads) return false;
+  s.arch -= r.arch;
+  const success = Math.random() < (r.squads > 0 ? 0.9 : 0.75);
+  s.expedition = { ruin: id, daysLeft: r.days, success, arch: r.arch };
+  pushLog(s, 'Экспедиция отправлена: ' + r.name + ' (' + r.days + ' дн.).');
+  save(s);
+  return true;
+}
+
 export function digDeeper(s) {
   const next = s.mineDepth + 1;
   const need = { 2: 1, 3: 1, 4: 2, 5: 3 }[next];
@@ -451,6 +504,10 @@ export function load() {
     const s = JSON.parse(raw);
     s.screen = 'menu';
     s.pendingEvent = null;
+    if (s.arch == null) s.arch = 0;
+    if (s.expedition === undefined) s.expedition = null;
+    if (s.seals == null) s.seals = 0;
+    if (!s.ruinsDone) s.ruinsDone = {};
     return s;
   } catch (e) { return null; }
 }

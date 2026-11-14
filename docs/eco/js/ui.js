@@ -58,15 +58,21 @@ export function wrapText(ctx, text, cx, cy, maxW, lineH) {
   return lines.length;
 }
 
+export function outline(ctx, str, x, y) {
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(15,10,4,0.85)';
+  ctx.lineWidth = 3;
+  ctx.strokeText(str, x, y);
+}
+
 export function iconLabel(ctx, img, x, y, size, text, color = '#ffe8c0', font = '18px') {
   if (img) ctx.drawImage(img, x, y, size, size);
   ctx.save();
-  ctx.fillStyle = color;
   ctx.font = font + ' Georgia, serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.shadowColor = '#000';
-  ctx.shadowBlur = 4;
+  outline(ctx, text, x + size + 6, y + size / 2);
+  ctx.fillStyle = color;
   ctx.fillText(text, x + size + 6, y + size / 2);
   ctx.restore();
 }
@@ -90,12 +96,11 @@ export function bar(ctx, x, y, w, h, frac, color = '#5ec24a') {
 
 export function text(ctx, str, x, y, opts = {}) {
   ctx.save();
-  ctx.fillStyle = opts.color || '#ffe8c0';
   ctx.font = (opts.font || '18px') + ' Georgia, serif';
   ctx.textAlign = opts.align || 'left';
   ctx.textBaseline = opts.baseline || 'top';
-  ctx.shadowColor = '#000';
-  ctx.shadowBlur = 4;
+  outline(ctx, str, x, y);
+  ctx.fillStyle = opts.color || '#ffe8c0';
   ctx.fillText(str, x, y);
   ctx.restore();
 }

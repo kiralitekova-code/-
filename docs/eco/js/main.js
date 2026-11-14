@@ -1,9 +1,9 @@
 import { loadAll, img, ready } from './assets.js';
 import { renderScreen } from './screens.js';
 import * as S from './state.js';
-import { CROPS, WORKSHOPS, SQUADS, RES, SEASONS } from './data.js';
+import { CROPS, WORKSHOPS, SQUADS, RES, SEASONS, RUINS } from './data.js';
 
-const W = 1280, H = 720;
+const W = 720, H = 1080;
 
 class Game {
   constructor(canvas) {
@@ -94,7 +94,7 @@ class Game {
         ],
       };
     } else if (key === 'barn') {
-      s.screen = 'store';
+      s.screen = 'market';
       this.popup = null;
     } else {
       this.popup = {
@@ -168,6 +168,20 @@ class Game {
 
   resolveEvent(choice) {
     S.resolveEvent(this.state, choice);
+  }
+
+  hireArch() {
+    if (!S.hireArch(this.state)) this.toast(this.state.arch >= 4 ? 'Больше археологов не нужно (макс. 4)' : 'Не хватает 250 монет');
+  }
+
+  sendExpedition(id) {
+    const s = this.state;
+    const r = RUINS[id];
+    if (!S.sendExpedition(s, id)) {
+      if (s.expedition) this.toast('Экспедиция уже в походе!');
+      else if (s.arch < r.arch) this.toast('Нужно археологов: ' + r.arch + ' (найми вверху карты)');
+      else this.toast('Нужно отрядов в Гильдии: ' + r.squads);
+    }
   }
 
   // ---------- ввод ----------
