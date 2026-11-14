@@ -253,6 +253,7 @@ class Game {
     this._last = t;
     this.time += dt;
     const ctx = this.ctx;
+    ctx.imageSmoothingEnabled = false;
     if (!this.loaded) this._drawLoading(ctx);
     else {
       renderScreen(ctx, this);

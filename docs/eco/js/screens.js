@@ -38,10 +38,13 @@ function btn(ctx, g, x, y, w, h, label, onClick, opts = {}) {
 }
 
 function bgCover(ctx, image) {
+  ctx.fillStyle = '#14100a';
+  ctx.fillRect(0, 0, W, H);
   if (!image) return;
-  const k = Math.max(W / image.width, H / image.height);
+  const k = Math.min(W / image.width, H / image.height);
   const dw = image.width * k, dh = image.height * k;
   ctx.drawImage(image, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  U.shade(ctx, 0, 0, W, H, '#000', 0.25);
 }
 
 function drawBackground(ctx, g) {
@@ -143,24 +146,24 @@ function drawFarm(ctx, g) {
   const groundTile = img(season === 3 ? 'tSnow1' : 'tGrass1');
   for (let i = 0; i < 6; i++) {
     const x = 40 + (i % 3) * 170, y = 100 + Math.floor(i / 3) * 146;
-    if (groundTile) {
+    const f = s.fields[i];
+    const ground = f.crop ? img('tSoil') : groundTile;
+    if (ground) {
       ctx.save();
-      ctx.globalAlpha = 0.85;
-      for (let ty = 0; ty < 2; ty++) for (let tx = 0; tx < 2; tx++)
-        ctx.drawImage(groundTile, x + tx * 70, y + ty * 55, 70, 55);
+      ctx.globalAlpha = 0.9;
+      ctx.drawImage(ground, x, y, 140, 110);
       ctx.restore();
     }
-    const f = s.fields[i];
     ctx.strokeStyle = '#5a4020'; ctx.lineWidth = 3;
     ctx.strokeRect(x, y, 140, 110);
     if (f.crop) {
       const c = CROPS[f.crop];
       const done = f.progress >= c.days;
-      const spr = img(done ? c.icon : 'tSoil');
+      const spr = img(c.icon);
       if (spr) {
-        const k = done ? 1 : 0.5 + 0.5 * (f.progress / c.days);
-        const w2 = spr.width * k, h2 = spr.height * k;
-        ctx.drawImage(spr, x + 70 - w2 / 2, y + 62 - h2 / 2, w2, h2);
+        const k = done ? 1 : 0.45 + 0.5 * (f.progress / c.days);
+        const bw = 110 * k, bh = 84 * k;
+        U.drawSpriteFit(ctx, spr, x + 70 - bw / 2, y + 58 - bh / 2, bw, bh);
       }
       U.text(ctx, c.name, x + 70, y + 14, { align: 'center', font: '16px' });
       U.bar(ctx, x + 20, y + 88, 100, 12, f.progress / c.days, done ? '#ffd700' : '#5ec24a');
@@ -173,8 +176,11 @@ function drawFarm(ctx, g) {
   }
 
   U.panel(ctx, 40, 400, 230, 150, 0.85);
-  const tree = img('tGrassPlants');
-  for (let t = 0; t < 4; t++) U.drawSpriteFit(ctx, img(t % 2 ? 'tGrass2' : 'tGrassPlants'), 50 + t * 40, 410, 36, 36);
+  const logs = img('iWood');
+  if (logs) {
+    U.drawSpriteFit(ctx, logs, 52, 408, 62, 52);
+    U.drawSpriteFit(ctx, logs, 120, 416, 46, 40);
+  }
   U.text(ctx, 'Лес', 155, 420, { font: '18px' });
   btn(ctx, g, 55, 448, 200, 38, 'Рубить лес (+' + Math.round(6 * S.seasonWoodMult(season) * S.toolBonus(s)) + ' древ.)',
     () => { if (!S.chopWood(g.state)) g.toast('Нет свободных рабочих или лимит рубки (2/день)'); }, { enabled: S.workersIdle(s) > 0 && s.chopToday < 2, font: '14px' });
